@@ -2,6 +2,9 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ========================
+// Helper: base64url encode (no padding)
+// ========================
 function base64urlEncode(str) {
     return Buffer.from(str).toString('base64')
         .replace(/\+/g, '-')
@@ -9,6 +12,9 @@ function base64urlEncode(str) {
         .replace(/=+$/, '');
 }
 
+// ========================
+// Generate fresh JWT (alg: none)
+// ========================
 function generateAstroyogiToken() {
     const header = { alg: "none", typ: "JWT" };
     const payload = {
@@ -19,11 +25,17 @@ function generateAstroyogiToken() {
         nbf: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 7776000
     };
-    return base64urlEncode(JSON.stringify(header)) + '.' + 
-           base64urlEncode(JSON.stringify(payload)) + '.';
+    const encodedHeader = base64urlEncode(JSON.stringify(header));
+    const encodedPayload = base64urlEncode(JSON.stringify(payload));
+    return `${encodedHeader}.${encodedPayload}.`;
 }
 
+// ========================
+// Generate random device ID (16 hex chars)
+// ========================
 function randomDeviceId() {
+    const buf = new Uint8Array(8);
+    // Node.js crypto instead of web crypto
     const crypto = require('crypto');
     const randomBytes = crypto.randomBytes(8);
     return Array.from(randomBytes)
@@ -31,6 +43,9 @@ function randomDeviceId() {
         .join('');
 }
 
+// ========================
+// Send Astroyogi Voice OTP
+// ========================
 async function sendAstroyogiVoiceOTP(phoneNumber) {
     const cleanPhone = phoneNumber.replace(/\D/g, '');
     if (cleanPhone.length !== 10) {
@@ -67,6 +82,9 @@ async function sendAstroyogiVoiceOTP(phoneNumber) {
     return { status: response.status, data };
 }
 
+// ========================
+// Express Routes
+// ========================
 app.get('/', (req, res) => {
     res.json({
         message: 'Astroyogi Voice OTP Service',
